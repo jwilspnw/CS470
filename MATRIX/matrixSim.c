@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <sys/time.h>
 #include <pthread.h>
 
 #define LOCK_EX 2
@@ -46,14 +48,21 @@ int main()
 	
     pthread_t threads[threadCount];
     iterations = 0;
-    
+    time_t t0 = clock();
     for ( i = 0; i < threadCount; i++ ) pthread_create(threads + i, NULL, thread_augment, (void *) fp);
+    time_t t1 = clock();
+    int datetime_diff_ms = difftime(t1, t0);
+    printf("Thread creation took %d clock cycles", datetime_diff_ms);
+    
     for ( i = 0; i < threadCount; i++ ) pthread_join(threads[i], NULL);
     
+    time_t t2 = clock();
     rewind(fp);
     i = 0;
     int current;
 	puts("");
+	datetime_diff_ms = difftime(t2, t0);
+	printf("Simulation finished after %d clock cycles\n", datetime_diff_ms);
     do
     {
         current = fgetc(fp);
