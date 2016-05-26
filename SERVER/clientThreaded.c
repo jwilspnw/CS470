@@ -55,6 +55,7 @@ int main(int argc , char *argv[])
     {
         if (connect(sckt , (struct sockaddr *)&server , sizeof(server)) < 0)
         {
+            usleep(250000); // wait a quarter second to not peg the CPU core
             ftime(&end);
             diff = (int) (1000.0 * (end.time - start.time) + (end.millitm - start.millitm));
             if (diff > timeOut)
