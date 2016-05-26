@@ -9,6 +9,6 @@ Recommended compilation is as follows:
     gcc -Wall serverThreaded.c -o serverT -lpthread
     
 > For clientThreaded.c
-    gcc -Wall clientThreaded.c -o clientT -lm
+    gcc -Wall clientThreaded.c -o clientT
     
 If the client cannot connect, it will time out.
