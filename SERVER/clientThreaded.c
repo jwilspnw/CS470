@@ -20,8 +20,7 @@ int main(int argc , char *argv[])
     char *ipAdd;
     getline(&line, &len, ini);
     fclose(ini);
-    //printf("%s", line);
-    int initVal = 0;
+
     const char space[2] = " ";
     strtok(line, space);
     initTok = strtok(NULL, space);
@@ -107,8 +106,6 @@ int main(int argc , char *argv[])
             break;
         }
     }
-     
-    close(sckt);
     return 0;
 }
 
