@@ -9,26 +9,37 @@ int checkDivis(int x, int y);
  
 int main(int argc , char *argv[])
 {
-    int sckt, x, y, sendNum;
+    int sckt, x, y, sendNum, sckt_num, timeOut;
     struct sockaddr_in server;
     
     FILE *ini;
     size_t len = 0;
-    ini = fopen("config.ini", "r");
+    ini = fopen(argv[1], "r");
     char *line, *initTok;
     char *ipAdd;
-    getline(&line, &len, ini);
-    fclose(ini);
-
-    const char space[2] = " ";
-    strtok(line, space);
-    initTok = strtok(NULL, space);
-    int sckt_num = atoi(initTok);
-    strtok(NULL, space); // consume "ip:"
-    ipAdd = strtok(NULL, space);
-    strtok(NULL, space); // consume "timeout(sec):"
-    initTok = strtok(NULL, space);
-    int timeOut = atoi(initTok) * 1000; // get timeout in ms
+    
+    if (ini != NULL) // Load from file if Arg supplied can be loaded
+    {
+        getline(&line, &len, ini);
+        fclose(ini);
+    
+        const char space[2] = " ";
+        strtok(line, space);
+        initTok = strtok(NULL, space);
+        sckt_num = atoi(initTok);
+        strtok(NULL, space); // consume "ip:"
+        ipAdd = strtok(NULL, space);
+        strtok(NULL, space); // consume "timeout(sec):"
+        initTok = strtok(NULL, space);
+        timeOut = atoi(initTok) * 1000; // get timeout in ms
+    }
+    else //otherwise load defaults
+    {
+        puts("Could not load file from supplied arguement.  Initializing with default settings.");
+        sckt_num = 8668;
+        ipAdd = "127.0.0.1";
+        timeOut = 10 * 1000; // get timeout in ms
+    }
 
     printf("Starting new client, listening to port %d on %s\n", sckt_num, ipAdd );
 

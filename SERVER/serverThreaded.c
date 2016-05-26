@@ -16,19 +16,28 @@ int isqrt(int number);
  
 int main(int argc , char *argv[])
 {
+    int sckt_num;
     FILE *ini;
-    ini = fopen("config.ini", "r");
-    char line[128];
-    fgets(line, 128, ini);
-    const char space[2] = " ";
-    char *initTok;
-    initTok = strtok(line, space);
-    initTok = strtok(NULL, space);
-    printf("%s", initTok);
-    int sckt_num = atoi(initTok);
-    printf("Attempting to create port on socket %d", sckt_num);
+    ini = fopen(argv[1], "r");
+    if (ini != NULL) // Try to load settings from config file specified
+    {
+        char line[128];
+        fgets(line, 128, ini);
+        const char space[2] = " ";
+        char *initTok;
+        initTok = strtok(line, space);
+        initTok = strtok(NULL, space);
+        sckt_num = atoi(initTok);
+    }
+    else  // Use deault settings
+    {
+        puts("Could not load file from supplied arguement.  Initializing with default settings.");
+        sckt_num = 8668;
+    }
     
-    int socket_desc , client_sock , c , *new_sock;
+    printf("Attempting to create port on socket %d...\n", sckt_num);
+    
+    int socket_desc , client_sckt , c , *new_sckt;
     struct sockaddr_in server , client;
      
     //Create socket
@@ -38,7 +47,7 @@ int main(int argc , char *argv[])
         printf("Could not create socket");
         exit(0);
     }
-    puts("Socket created");
+    puts("...Socket created...");
      
     //Prepare the sockaddr_in structure
     server.sin_family = AF_INET;
@@ -51,7 +60,7 @@ int main(int argc , char *argv[])
         perror("Unable to bind to socket.");
         exit(0);
     }
-    printf("Bound to socket %d\n", sckt_num);
+    printf("...Bound to socket %d.\n", sckt_num);
      
     //Listen on bound socket
     listen(socket_desc , 3);
@@ -59,15 +68,15 @@ int main(int argc , char *argv[])
     //Accept incoming connections
     puts("Waiting for incoming connections...");
     c = sizeof(struct sockaddr_in);
-    while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
+    while( (client_sckt = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
         puts("Connection accepted...");
          
         pthread_t handler_thread;
-        new_sock = malloc(1);
-        *new_sock = client_sock;
+        new_sckt = malloc(1);
+        *new_sckt = client_sckt;
          
-        if( pthread_create( &handler_thread , NULL ,  connection_handler , (void*) new_sock) < 0)
+        if( pthread_create( &handler_thread , NULL ,  connection_handler , (void*) new_sckt) < 0)
         {
             perror("could not create thread");
             exit(0);
@@ -76,7 +85,7 @@ int main(int argc , char *argv[])
         puts("...handler thread assigned.");
     }
      
-    if (client_sock < 0)
+    if (client_sckt < 0)
     {
         perror("Connection failed:");
         exit(0);
@@ -88,7 +97,7 @@ int main(int argc , char *argv[])
 void *connection_handler(void *socket_desc)
 {
     //Get the socket descriptor
-    int sock = *(int*)socket_desc, client_num = 1, svr_x, svr_y;
+    int sckt = *(int*)socket_desc, client_num = 1, svr_x, svr_y;
     int read_size;
     
     //Send num to client
@@ -99,25 +108,27 @@ void *connection_handler(void *socket_desc)
     } while(svr_y == 0);
 
     
-    write(sock , &svr_x , sizeof(int));
-    write(sock , &svr_y , sizeof(int));
+    write(sckt , &svr_x , sizeof(int));
+    write(sckt , &svr_y , sizeof(int));
     
     //Receive a message from client
-    while( (read_size = recv(sock , &client_num , sizeof(int) , 0)) > 0 )
+    while( (read_size = recv(sckt , &client_num , sizeof(int) , 0)) > 0 )
     {
         if (client_num == 1)
         {
             puts("Divisible pair found. Closing connection.");
             break;
-        } else {
+        } 
+        else
+        {
             svr_x = rand();
             do
             {
                 svr_y = rand() % (isqrt(svr_x));
             } while(svr_y == 0);
             
-            write(sock , &svr_x , sizeof(int));
-            write(sock , &svr_y , sizeof(int));
+            write(sckt , &svr_x , sizeof(int));
+            write(sckt , &svr_y , sizeof(int));
         }
     }
      
@@ -131,7 +142,7 @@ void *connection_handler(void *socket_desc)
         perror("Error getting response from client:");
     }
          
-    //Free the socket pointer
+    // Cleanup
     free(socket_desc);
      
     return 0;
