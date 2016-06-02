@@ -3,7 +3,8 @@
 #include <string.h>
 
 static const int OFFSET = 38;
-static const int DEBUG = 1;
+static const int DEBUG = 0;
+static const int VERBOSE = 0;
 static const int QUANTAM = 30;
 static int running;
 static int procCount;
@@ -42,43 +43,28 @@ int main()
     
     struct Process allProcs[procCount];
     
-    int i = 0, j;
-    
     load_procs(allProcs, procCount, fr);
     printf("%d processes parsed from .bin file.\nAllocated %lu bytes in memory to track processes.\n\n", procCount, sizeof(allProcs));
     
-    int * priorityQ = NULL, finished = 0;
+    int * priorityQ = NULL;
     priorityQ = (int*) realloc (priorityQ, running * sizeof(int));
     load_indices(allProcs, priorityQ);
     
-    //return 0;
-    if (DEBUG)
-    {
-        //print_indices(priorityQ, indexQ);
-        //printf("%d\n\n", running);
-        //print_procs(allProcs, procCount);
-    }
-    
-    //print_procs(allProcs, procCount);
-    
-    int ops = 0, skips = 0, pIndex = 0;
+    int ops = 0, skips = 0, pIndex = 0, i = 0, finished = 0;
     
     while(!finished)
     {
         // ROUND ROBIN
         skips = 0;
-        //i = 0;
         ops = 0;
-        puts("RR start");
         while(ops < QUANTAM)
         {
             if(allProcs[i].status != 0)
             {
-                if (cpu_burst(allProcs, i++) == 0)
-                {
-                    write_procs(allProcs, procCount, fw);
-                    printf("\nWrite - round robin.  Running:%d\n", running);
-                }
+                if (cpu_burst(allProcs, i++) == 0) printf("Process finished in RR, running:%d\n", running);
+                write_procs(allProcs, procCount, fw);
+                if (DEBUG) printf("\nWrite - round robin.  Running:%d", running);
+                if (VERBOSE) print_procs(allProcs, procCount);
                 if ( ((i % 2) == 0) && (i > 0) ) priority_decay(allProcs);
                 ops++;
                 skips = 0;
@@ -95,14 +81,13 @@ int main()
                 if ( ((i % 2) == 0) && (i > 0) ) priority_decay(allProcs);
             }
             i = (i % procCount) ;
-            printf("\nrrIndex = %d", i);
+            //printf("\nrrIndex = %d", i);
         }
-        puts("RR end");
+        
+        // PRIORITY
         ops = 0;
-        puts("Priority start");
         while(ops < QUANTAM)
         {
-            printf("\npriorityIndex = %d", priorityQ[pIndex]);
             if (pIndex == procCount)
             {
                 puts("Finished!");
@@ -114,12 +99,10 @@ int main()
             if(allProcs[priorityQ[pIndex]].status != 0)
             {
                 ops++;
-                if (cpu_burst(allProcs, priorityQ[pIndex]) == 0)
-                {
-                    write_procs(allProcs, procCount, fw);
-                    printf("\nWrite - priority.  Running:%d\n", running);
-                    //pIndex++;
-                }
+                if (cpu_burst(allProcs, priorityQ[pIndex]) == 0) printf("Process finished in priority, running:%d\n", running);
+                write_procs(allProcs, procCount, fw);
+                if (DEBUG) printf("\nWrite - priority.  Running:%d", running);
+                if (VERBOSE) print_procs(allProcs, procCount);
             } 
             else 
             {
@@ -128,13 +111,9 @@ int main()
             if ( ((i % 2) == 0) && (i > 0) ) priority_decay(allProcs);
             
         }
-        puts("Priority end");
-        //print_procs(allProcs, procCount);
-        
     }
     
     print_procs(allProcs, procCount);
-    
     write_procs(allProcs, procCount, fw);
     
     fclose(fw);
@@ -204,7 +183,7 @@ void write_procs(struct Process *allProcs, int procCount, FILE *fw)
 
 int cpu_burst(struct Process *allProcs, int j)
 {
-    int stat = allProcs[j].status, priority = allProcs[j].priority, burstTime = allProcs[j].burstTime;
+    int stat = allProcs[j].status, burstTime = allProcs[j].burstTime;
     --burstTime;
     if ((burstTime == 0) && (stat != 0) )
     {
@@ -223,47 +202,19 @@ int cpu_burst(struct Process *allProcs, int j)
 void load_indices(struct Process *allProcs, int *priorityQ)
 {
     puts("load index start");
-    int lastIndex = -1, index = -1, min, i, j, k;  
-    int loaded[procCount];
+    int i;
     
-    for(i = 0; i < procCount; i++)
+    for(i = 0; i < procCount; i++) // load indices
     {
         priorityQ[i] = allProcs[i].priority + (i * 1000);
     }
-    puts("Raw:");
-    //print_indices(priorityQ);
     
-    qsort(priorityQ, procCount, sizeof(int), cmpfuncmod);
-    puts("Sorted:");
-    //print_indices(priorityQ);
+    qsort(priorityQ, procCount, sizeof(int), cmpfuncmod); // sort
     
-    for(i = 0; i < procCount; i++)
+    for(i = 0; i < procCount; i++) // divide to get real order
     {
         priorityQ[i] = priorityQ[i] / 1000;
     }
-    
-    /*
-    for(i = 0; i < procCount; i++)
-    {
-         // min is a char, so must be less than 128
-        min = 128;
-        for(j = 0; j < procCount; j++)
-        {
-            //printf("  %d:", allProcs[j].priority);
-            if ( (allProcs[j].priority <= min) && ( loaded[j] != 1 ) && (j != index))
-            {
-                min = allProcs[j].priority;
-                //if (DEBUG) printf("%d  ", j);
-                index = j;
-            }
-        }
-        loaded[index] = 1;
-        priorityQ[i] = index;
-    }
-    */
-    puts("load index end");
-    
-    //print_indices(priorityQ);
 }
 
 void print_indices(int *priorityQ)
@@ -287,7 +238,6 @@ void priority_decay(struct Process *allProcs)
             memcpy(&allProcs[j].priority, &c, sizeof(char));
         }
     }
-    
 }
 
 int cmpfuncmod (const void * a, const void * b)
