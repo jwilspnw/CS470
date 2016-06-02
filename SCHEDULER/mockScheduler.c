@@ -81,7 +81,6 @@ int main()
                 if ( ((i % 2) == 0) && (i > 0) ) priority_decay(allProcs);
             }
             i = (i % procCount) ;
-            //printf("\nrrIndex = %d", i);
         }
         
         // PRIORITY
@@ -109,7 +108,6 @@ int main()
                 pIndex++;
             }
             if ( ((i % 2) == 0) && (i > 0) ) priority_decay(allProcs);
-            
         }
     }
     
@@ -192,7 +190,6 @@ int cpu_burst(struct Process *allProcs, int j)
         burstTime = 0;
         memcpy(&allProcs[j].status, &stat, sizeof(char));
         memcpy(&allProcs[j].burstTime, &burstTime, sizeof(int));
-        //print_procs(allProcs, procCount);
         return stat;
     }
     memcpy(&allProcs[j].burstTime, &burstTime, sizeof(int));
